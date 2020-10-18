@@ -9,7 +9,7 @@ namespace Raw_Operation
     penguinV::ImageTemplate<_Type> Load( const std::string & path, uint32_t width, uint32_t height, uint8_t colorCount )
     {
         if ( path.empty() || width == 0 || height == 0 || colorCount == 0 )
-            throw imageException( "Incorrect parameters for raw image loading" );
+            throw penguinVException( "Incorrect parameters for raw image loading" );
 
         std::fstream file;
         file.open( path, std::fstream::in | std::fstream::binary );
@@ -34,10 +34,11 @@ namespace Raw_Operation
 
         const size_t blockSize = 4 * 1024 * 1024; // read by 4 MB blocks
 
+        char * output = reinterpret_cast<char *>( image.data() );
         while ( dataToRead > 0 ) {
             size_t readSize = dataToRead > blockSize ? blockSize : dataToRead;
 
-            file.read( reinterpret_cast<char *>(image.data() + dataReaded), static_cast<std::streamsize>(readSize) );
+            file.read( output + dataReaded, static_cast<std::streamsize>( readSize ) );
 
             dataReaded += readSize;
             dataToRead -= readSize;
@@ -51,31 +52,30 @@ namespace Raw_Operation
     {
         Image_Function::ValidateImageParameters( image );
 
-        std::vector < uint8_t > pallete;
-
         std::fstream file;
         file.open( path, std::fstream::out | std::fstream::trunc | std::fstream::binary );
 
-        if(  !file )
-            throw imageException( "Cannot create file for saving" );
+        if ( !file )
+            throw penguinVException( "Cannot create file for saving" );
 
         size_t dataToWrite = sizeof( _Type ) * image.rowSize() * image.height();
         size_t dataWritten = 0;
 
         const size_t blockSize = 4 * 1024 * 1024; // read by 4 MB blocks
 
+        const char * output = reinterpret_cast<const char *>( image.data() );
         while ( dataToWrite > 0 ) {
             size_t writeSize = dataToWrite > blockSize ? blockSize : dataToWrite;
 
-            file.write( reinterpret_cast<const char *>(image.data() + dataWritten), static_cast<std::streamsize>( writeSize ) );
+            file.write( output + dataWritten, static_cast<std::streamsize>( writeSize ) );
             file.flush();
 
             dataWritten += writeSize;
             dataToWrite -= writeSize;
         }
 
-        if( !file )
-            throw imageException( "failed to write data into file" );
+        if ( !file )
+            throw penguinVException( "failed to write data into file" );
     }
 
     template <typename _Type>
